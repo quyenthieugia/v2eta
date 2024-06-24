@@ -48,12 +48,12 @@ async def handle(url) -> dict:
     key            = encoded_base64.decode('utf-8').replace('/', '_')
 
     # GET FUTOKEN
-    req = await fetch("https://vidplay.online/futoken", {"Referer": url})
+    req = await fetch("https://vid2v11.site/futoken", {"Referer": url})
     fu_key = re.search(r"var\s+k\s*=\s*'([^']+)'", req.text).group(1)
     data = f"{fu_key},{','.join([str(ord(fu_key[i % len(fu_key)]) + ord(key[i])) for i in range(len(key))])}"
     
     # GET SRC
-    req = await fetch(f"https://vidplay.online/mediainfo/{data}?{SUB_URL}&autostart=true",headers={"Referer": url})
+    req = await fetch(f"https://vid2v11.site/mediainfo/{data}?{SUB_URL}&autostart=true",headers={"Referer": url})
     req_data = req.json()
 
     # RETURN IT
