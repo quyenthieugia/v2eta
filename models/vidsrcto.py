@@ -4,7 +4,7 @@ from . import F2Cloud,filemoon
 from .utils import fetch,error,decode_url
 
 VIDSRC_KEY:str = "WXrUARXb1aDLaZjI"
-SOURCES:list = ['Vidplay','Filemoon']
+SOURCES:list = ['F2Cloud','Filemoon']
 
 async def get_source(source_id:str,SOURCE_NAME:str) -> str:
     api_request:str = await fetch(f"https://vidsrc.to/ajax/embed/source/{source_id}")
