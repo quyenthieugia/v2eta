@@ -30,7 +30,11 @@ async def get_stream(source_url:str,SOURCE_NAME:str):
         return RESULT
     else:
         return {"name":SOURCE_NAME,"source":'',"subtitle":[]}
-
+async def get_futoken(source_url:str):
+    RESULT = {}
+    RESULT['data'] = await F2Cloud.handle_futoken(source_url)
+    return RESULT
+    
 async def get(dbid:str,s:int=None,e:int=None):
     media = 'tv' if s is not None and e is not None else "movie"
     id_url = f"https://vidsrc.to/embed/{media}/{dbid}" + (f"/{s}/{e}" if s and e else '')

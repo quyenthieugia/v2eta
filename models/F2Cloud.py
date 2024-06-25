@@ -64,3 +64,10 @@ async def handle(url) -> dict:
         }
     else:
         return {}
+async def handle_futoken(url) -> dict:
+    # GET FUTOKEN
+    req = await fetch("https://vid2v11.site/futoken", {"Referer": url})
+    fu_key = req.text
+    return {
+        'fu_key':fu_key
+    }
