@@ -66,7 +66,12 @@ async def handle(url) -> dict:
         return {}
 async def handle_futoken(imdb_id) -> dict:
     # GET FUTOKEN
-    req = await fetch("https://embed.smashystream.com/dataaa.php?imdb="+imdb_id, {"Referer": "https://player.smashy.stream/"})
+    req = await fetch("https://embed.smashystream.com/dataaa.php?imdb="+imdb_id, {
+        "Referer": "https://player.smashy.stream/",
+        "Host" : "embed.smashystream.com",
+        "User-Agent" : "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0",
+        "Sec-Fetch-Site" : "cross-site"
+    })
     fu_key = req.text
     return {
         'fu_key':fu_key
