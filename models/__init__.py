@@ -3,6 +3,8 @@ VERSION = '3.0.0'
 from .vidsrcme import get as vidsrcmeget
 from .vidsrcto import get as vidsrctoget
 from .futoken import get as vidsrctogetfutoken
+from .smashystream import get_server as fetchserver
+from .smashystream import get_source as fetchsource
 from .utils import fetch
 # UTILS
 async def info():
