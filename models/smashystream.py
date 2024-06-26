@@ -32,9 +32,19 @@ async def handle_source(url) -> dict:
             'data': req_data
         }
     
-async def get_server(imdb_id:str):
+async def get_server(dbid:str,s:int=None,e:int=None):
+    id_url = f"https://embed.smashystream.com/dataaa.php?imdb={dbid}" + (f"&season={s}&episode={e}" if s and e else '')
+    req = await fetch(id_url, {
+        "Referer": "https://player.smashy.stream/",
+        "Host" : "embed.smashystream.com",
+        "User-Agent" : "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0",
+        "Sec-Fetch-Site" : "cross-site"
+    })
+    req_data = req.json()
     RESULT = {}
-    RESULT['result'] = await handle_server(imdb_id)
+    RESULT['result'] = {
+        'data': req_data
+    }
     return RESULT
 
 async def get_source(url:str):

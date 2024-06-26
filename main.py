@@ -32,16 +32,16 @@ async def vidsrc(dbid:str,s:int=None,e:int=None):
     else:
         raise HTTPException(status_code=404, detail=f"Invalid id: {dbid}")
 
-@app.post('/getserver/')
-async def getserver(model: DataModal):
-    if model.imdb_id:
+@app.get('/getserver/{dbid}')
+async def getserver(dbid:str,s:int=None,e:int=None):
+    if dbid:
         return {
             "status":200,
             "info":"success",
-            "sources":await fetchserver(model.imdb_id)
+            "sources":await fetchserver(dbid,s,e)
         }
     else:
-        raise HTTPException(status_code=404, detail=f"Invalid imdb_id: {model.imdb_id}")
+        raise HTTPException(status_code=404, detail=f"Invalid imdb_id: {dbid}")
     
 @app.post('/getsource/')
 async def getsource(model: DataModal):
