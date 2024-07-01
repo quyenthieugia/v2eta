@@ -6,7 +6,7 @@ import base64
 
 async def handle_server(imdb_id) -> dict:
     # GET SERVER
-    req = await fetch("https://embed.smashystream.com/dataaa.php?imdb="+imdb_id, {
+    req = await fetch("https://embed.smashystream.com/dataaw.php?imdb="+imdb_id, {
         "Referer": "https://player.smashy.stream/",
         "Host" : "embed.smashystream.com",
         "User-Agent" : "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0",
@@ -16,7 +16,6 @@ async def handle_server(imdb_id) -> dict:
     return {
             'data': req_data
         }
-
 async def handle_source(url) -> dict:
     # GET SERVER
     req = await fetch(url, {
@@ -33,7 +32,7 @@ async def handle_source(url) -> dict:
         }
     
 async def get_server(dbid:str,s:int=None,e:int=None):
-    id_url = f"https://embed.smashystream.com/dataaa.php?imdb={dbid}" + (f"&season={s}&episode={e}" if s and e else '')
+    id_url = f"https://embed.smashystream.com/dataaw.php?imdb={dbid}" + (f"&season={s}&episode={e}" if s and e else '')
     req = await fetch(id_url, {
         "Referer": "https://player.smashy.stream/",
         "Host" : "embed.smashystream.com",
