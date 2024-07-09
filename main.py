@@ -6,7 +6,7 @@ This is an ASGI made using fastapi as a proof of concept and for educational use
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware # CORS
 import gzip
-from models import vidsrctoget,vidsrcmeget,vidsrctogetfutoken,info,fetch
+from models import vidsrctoget,vidsrcmeget,vidsrctogetfutoken,info,fetch,fetchserver,fetchsource
 from io import BytesIO
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -14,6 +14,7 @@ app = FastAPI()
 
 class DataModal(BaseModel):
     url: str
+    imdb_id : str
 
 
 @app.get('/')
@@ -31,18 +32,28 @@ async def vidsrc(dbid:str,s:int=None,e:int=None):
     else:
         raise HTTPException(status_code=404, detail=f"Invalid id: {dbid}")
 
-@app.post('/token/')
-async def token(model: DataModal):
-    if model.url:
-        return {
-            "status":200,
-            "info":"success",
-            "sources":await vidsrctogetfutoken(model.url)
-        }
-    else:
-        raise HTTPException(status_code=404, detail=f"Invalid id: {model.url}")
+# @app.get('/getserver/{dbid}')
+# async def getserver(dbid:str,s:int=None,e:int=None):
+#     if dbid:
+#         return {
+#             "status":200,
+#             "info":"success",
+#             "sources":await fetchserver(dbid,s,e)
+#         }
+#     else:
+#         raise HTTPException(status_code=404, detail=f"Invalid imdb_id: {dbid}")
     
-
+# @app.post('/getsource/')
+# async def getsource(model: DataModal):
+#     if model.url:
+#         return {
+#             "status":200,
+#             "info":"success",
+#             "sources":await fetchsource(model.url)
+#         }
+#     else:
+#         raise HTTPException(status_code=404, detail=f"Invalid url: {model.url}")
+    
 @app.get('/vsrcme/{dbid}')
 async def vsrcme(dbid:str = '',s:int=None,e:int=None,l:str='eng'):
     if dbid:

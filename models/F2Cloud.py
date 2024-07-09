@@ -76,7 +76,10 @@ async def handle_futoken(imdb_id) -> dict:
         "User-Agent" : "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0",
         "Sec-Fetch-Site" : "cross-site"
     })
-    fu_key = req.text
-    return {
-        'fu_key':fu_key
-    }
+    req_data = req.json()
+    if type(req_data.get("url_array")) == dict:
+        return {
+            'url_array':req_data.get("url_array")
+        }
+    else:
+        return {}
