@@ -25,9 +25,9 @@ async def get_stream(source_url:str,SOURCE_NAME:str):
     if SOURCE_NAME==SOURCES[0]:
         RESULT['data'] = await F2Cloud.handle(source_url)
         return RESULT
-    elif SOURCE_NAME==SOURCES[1]:
-        RESULT['data'] = await filemoon.handle(source_url)
-        return RESULT
+    # elif SOURCE_NAME==SOURCES[1]:
+    #     RESULT['data'] = await filemoon.handle(source_url)
+    #     return RESULT
     else:
         return {"name":SOURCE_NAME,"source":'',"subtitle":[]}
 async def get_futoken(source_url:str):
@@ -38,7 +38,11 @@ async def get_futoken(source_url:str):
 async def get(dbid:str,s:int=None,e:int=None):
     media = 'tv' if s is not None and e is not None else "movie"
     id_url = f"https://vidsrc.to/embed/{media}/{dbid}" + (f"/{s}/{e}" if s and e else '')
+    print(f"[>] id_url \"{id_url}\"...")
+
+    
     id_request = await fetch(id_url)
+    print(f"id_request: {id_request}")
     if id_request.status_code == 200:
         try:
             soup = BeautifulSoup(id_request.text, "html.parser")
