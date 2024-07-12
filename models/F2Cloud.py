@@ -48,9 +48,16 @@ async def handle(url) -> dict:
     key            = encoded_base64.decode('utf-8').replace('/', '_')
 
     # GET FUTOKEN
+<<<<<<< HEAD
     req = await fetch("https://vid2v11.site/futoken", {"Referer": url})
    
     fu_key = re.search(r"var\s+k\s*=\s*'([^']+)'", req.text).group(1)
+=======
+    req = await fetch("https://vid2v11.site/futoken", {"Referer": url,"Host" : "vid2v11.site"})
+    fu_key = re.search(r"var\s+k\s*=\s*'([^']+)'", req.text).group(1)
+    print(f"[>] fu_key \"{fu_key}\"...")
+    data = f"{fu_key},{','.join([str(ord(fu_key[i % len(fu_key)]) + ord(key[i])) for i in range(len(key))])}"
+>>>>>>> 059f59955586259c5ff435d798c8482dd6c4e29c
     
     print(f"[>] fu_key {fu_key}...")
     data = f"{fu_key},{','.join([str(ord(fu_key[i % len(fu_key)]) + ord(key[i])) for i in range(len(key))])}"
@@ -58,7 +65,11 @@ async def handle(url) -> dict:
     # GET SRC
     req = await fetch(f"https://vid2v11.site/mediainfo/{data}?{SUB_URL}&autostart=true",headers={"Referer": url})
     req_data = req.json()
+<<<<<<< HEAD
     print(f"[>] req_data {req_data}...")
+=======
+    print(f"[>] req_data \"{req_data}\"...")
+>>>>>>> 059f59955586259c5ff435d798c8482dd6c4e29c
     # RETURN IT
     if type(req_data.get("result")) == dict:
         return {
@@ -66,7 +77,10 @@ async def handle(url) -> dict:
             'subtitle':subtitles
         }
     else:
-        return {}
+        return {
+            'stream':req_data.get("result").get("sources", [{}])[0].get("file"),
+            'subtitle':subtitles
+        }
 async def handle_futoken(imdb_id) -> dict:
     # GET FUTOKEN
     req = await fetch("https://embed.smashystream.com/dataaa.php?imdb="+imdb_id, {
