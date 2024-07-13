@@ -50,10 +50,7 @@ async def handle(url) -> dict:
     # GET FUTOKEN
     req = await fetch("https://vid2v11.site/futoken", {"Referer": url,"Host" : "vid2v11.site"})
     fu_key = re.search(r"var\s+k\s*=\s*'([^']+)'", req.text).group(1)
-    print(f"[>] fu_key \"{fu_key}\"...")
     data = f"{fu_key},{','.join([str(ord(fu_key[i % len(fu_key)]) + ord(key[i])) for i in range(len(key))])}"
-    
-    print(f"[>] fu_key {fu_key}...")
     data = f"{fu_key},{','.join([str(ord(fu_key[i % len(fu_key)]) + ord(key[i])) for i in range(len(key))])}"
     print(f"[>] url https://vid2v11.site/mediainfo/{data}?{SUB_URL}&autostart=true")
     # GET SRC
