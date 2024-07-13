@@ -6,6 +6,7 @@ app = Flask(__name__)
 @app.route('/webhook', methods=['POST'])
 def webhook():
     if request.method == 'POST':
+        print(f"[>] data ...")
         data = request.json
         print(f"[>] data \"{data}\"...")
         if data and 'ref' in data and data['ref'] == 'refs/heads/master':
