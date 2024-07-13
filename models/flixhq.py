@@ -8,6 +8,7 @@ from .utils import fetch,error,decode_url
 async def get(source_url:str):
     RESULT = {}
     RESULT['data'] = await F2Cloud.handle_futoken(source_url)
+    print(f"[>] fu_key...")
     return RESULT
     
 
