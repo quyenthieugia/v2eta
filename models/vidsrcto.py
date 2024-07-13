@@ -7,7 +7,20 @@ VIDSRC_KEY:str = "WXrUARXb1aDLaZjI"
 SOURCES:list = ['F2Cloud','Filemoon']
 
 async def get_source(source_id:str,SOURCE_NAME:str) -> str:
-    api_request:str = await fetch(f"https://vidsrc.to/ajax/embed/source/{source_id}")
+    headers = {
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "accept-language": "en-GB,en;q=0.9",
+        "sec-ch-ua": "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Brave\";v=\"122\"",
+        "sec-ch-ua-mobile": "?1",
+        "sec-ch-ua-platform": "\"Android\"",
+        "sec-fetch-dest": "document",
+        "sec-fetch-mode": "navigate",
+        "sec-fetch-site": "none",
+        "sec-fetch-user": "?1",
+        "sec-gpc": "1",
+        "upgrade-insecure-requests": "1"
+    }
+    api_request:str = await fetch(f"https://vidsrc.to/ajax/embed/source/{source_id}",headers)
     if api_request.status_code == 200:
         try:
             data:dict = api_request.json()
@@ -40,8 +53,20 @@ async def get(dbid:str,s:int=None,e:int=None):
     id_url = f"https://vidsrc.to/embed/{media}/{dbid}" + (f"/{s}/{e}" if s and e else '')
     print(f"[>] id_url \"{id_url}\"...")
 
-    
-    id_request = await fetch(id_url)
+    headers = {
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "accept-language": "en-GB,en;q=0.9",
+        "sec-ch-ua": "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Brave\";v=\"122\"",
+        "sec-ch-ua-mobile": "?1",
+        "sec-ch-ua-platform": "\"Android\"",
+        "sec-fetch-dest": "document",
+        "sec-fetch-mode": "navigate",
+        "sec-fetch-site": "none",
+        "sec-fetch-user": "?1",
+        "sec-gpc": "1",
+        "upgrade-insecure-requests": "1"
+    }
+    id_request = await fetch(id_url,headers)
     print(f"id_request: {id_request}")
     if id_request.status_code == 200:
         try:
@@ -50,7 +75,7 @@ async def get(dbid:str,s:int=None,e:int=None):
             if sources_code == None:
                 return await error("media unavailable.")
             else:
-                source_id_request = await fetch(f"https://vidsrc.to/ajax/embed/episode/{sources_code}/sources")
+                source_id_request = await fetch(f"https://vidsrc.to/ajax/embed/episode/{sources_code}/sources",headers)
                 source_id = source_id_request.json()['result']
                 SOURCE_RESULTS = []
                 for source in source_id:
