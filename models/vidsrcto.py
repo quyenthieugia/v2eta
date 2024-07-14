@@ -1,7 +1,5 @@
 import asyncio
 from bs4 import BeautifulSoup
-
-from models import MemcacheClient
 from . import F2Cloud,filemoon
 from .utils import fetch,error,decode_url
 VIDSRC_KEY:str = "WXrUARXb1aDLaZjI"
