@@ -1,8 +1,9 @@
 import asyncio
 from bs4 import BeautifulSoup
+
+from models import MemcacheClient
 from . import F2Cloud,filemoon
 from .utils import fetch,error,decode_url
-
 VIDSRC_KEY:str = "WXrUARXb1aDLaZjI"
 SOURCES:list = ['F2Cloud','Filemoon']
 
@@ -52,7 +53,6 @@ async def get(dbid:str,s:int=None,e:int=None):
     media = 'tv' if s is not None and e is not None else "movie"
     id_url = f"https://vidsrc.to/embed/{media}/{dbid}" + (f"/{s}/{e}" if s and e else '')
     print(f"[>] id_url \"{id_url}\"...")
-
     headers = {
         "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
         "accept-language": "en-GB,en;q=0.9",

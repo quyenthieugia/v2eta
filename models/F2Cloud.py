@@ -3,6 +3,7 @@ from typing import Union
 from . import subtitle
 import re
 import base64
+
 async def decode_data(key: str, data: Union[bytearray, str]) -> bytearray:
     key_bytes = bytes(key, 'utf-8')
     s = bytearray(range(256))
