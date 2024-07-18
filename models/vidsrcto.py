@@ -42,7 +42,7 @@ async def get(dbid:str,s:int=None,e:int=None):
 
     
     id_request = await fetch(id_url)
-    print(f"id_request: {id_request}")
+    await error(f"id_request: {id_request.text}")
     if id_request.status_code == 200:
         try:
             soup = BeautifulSoup(id_request.text, "html.parser")
