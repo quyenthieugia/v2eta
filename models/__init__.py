@@ -5,6 +5,7 @@ from .vidsrcto import get as vidsrctoget
 from .futoken import get as vidsrctogetfutoken
 from .smashystream import get_server as fetchserver
 from .smashystream import get_source as fetchsource
+from .susflix import get_streaming as fetchstreaming
 from .utils import fetch
 # UTILS
 async def info():
