@@ -38,7 +38,7 @@ async def getserver(dbid:str,s:int=None,e:int=None):
          return {
              "status":200,
              "info":"success",
-            "sources":await fetchserver(dbid,s,e)
+             "sources":await fetchserver(dbid,s,e)
          }
      else:
          raise HTTPException(status_code=404, detail=f"Invalid imdb_id: {dbid}")
