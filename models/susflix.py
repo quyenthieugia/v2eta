@@ -35,30 +35,27 @@ async def get_streaming(dbid: str, s: int = None, e: int = None) -> dict :
         json_array = json.loads(cookies)
         # Get a random element from the list
         random_element = random.choice(json_array)
-
         # Access the 'cookie' value from the selected random element
         random_cookie = random_element['cookie']
-
-        print("Random Cookie Value:", random_cookie)
         movie_info = await get_imdb_info(dbid)
         id = 0
         if movie_info['movie_results'] :
             id = movie_info['movie_results'][0]['id']
-            title = movie_info['movie_results'][0]['title']
-            release_date = movie_info['movie_results'][0]['release_date']
-            release_year = release_date.split('-')[0]
+            #title = movie_info['movie_results'][0]['title']
+            #release_date = movie_info['movie_results'][0]['release_date']
+            #release_year = release_date.split('-')[0]
         if movie_info['tv_results'] :
             id = movie_info['tv_results'][0]['id']
-            title = movie_info['tv_results'][0]['title']
-            release_date = movie_info['tv_results'][0]['release_date']
-            release_year = release_date.split('-')[0]
-        urlSearch = f"https://susflix.tv/view/movie/{id}"
-        cookie = "session=eyJfZnJlc2giOmZhbHNlLCJwaG9uZV9udW1iZXIiOiJxdXllbmRuIn0.ZpjXHQ.n9nr8dv3o6SjduwDcMzQgIcHnd4"
+            #title = movie_info['tv_results'][0]['title']
+            #release_date = movie_info['tv_results'][0]['release_date']
+            #release_year = release_date.split('-')[0]
+        urlSearch = "https://susflix.tv/view/" + (f"tv" if s and e else 'movie') + f"/{id}"+ (f"/{s}/{e}" if s and e else '')
+        #cookie = "session=eyJfZnJlc2giOmZhbHNlLCJwaG9uZV9udW1iZXIiOiJxdXllbmRuIn0.ZpjXHQ.n9nr8dv3o6SjduwDcMzQgIcHnd4"
         req = await fetch(urlSearch, {
             "Referer": f"https://susflix.tv/loading?id={id}",
             "Host": "susflix.tv",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0",
-            "Cookie": cookie,
+            "Cookie": random_cookie,
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
         })
         req_data = req.text
@@ -73,7 +70,6 @@ async def get_streaming(dbid: str, s: int = None, e: int = None) -> dict :
 
             # Find all matches
             qualities = re.findall(quality_pattern, qualities_array)
-
             # Print the extracted qualities
             for path, quality in qualities:
                 print(f"Path: {path}, Quality: {quality}")
@@ -83,4 +79,4 @@ async def get_streaming(dbid: str, s: int = None, e: int = None) -> dict :
      
     except Exception as e:
         logging.error(f"Error fetching server data: {e}")
-        return {'result': None}
+        return {'result': []}
