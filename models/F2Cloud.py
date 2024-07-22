@@ -39,10 +39,13 @@ async def handle(url) -> dict:
     # GET SUB
     subtitles = {}
     subtitles = await subtitle.vscsubs(SUB_URL)
-
     # DECODE SRC
-    key_req        = await fetch('https://raw.githubusercontent.com/quyendn/rapidclown/vidplay/key.json')
+    key_req        = await fetch('https://raw.githubusercontent.com/Ciarands/vidsrc-keys/main/keys.json')
+    encrypt,decrypt      = key_req.json()
+    print(f"encrypt:" + (encrypt))
+    print(f"decrypt: "+ (decrypt))
     key1,key2      = key_req.json()
+
     decoded_id     = await decode_data(key1, SRC_URL.split('/e/')[-1])
     encoded_result = await decode_data(key2, decoded_id)
     encoded_base64 = base64.b64encode(encoded_result)

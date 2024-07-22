@@ -4,3 +4,4 @@ fastapi
 pymemcache
 pycryptodome
 cryptography
+aiohttp

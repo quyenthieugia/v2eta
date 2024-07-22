@@ -1,182 +1,126 @@
 import requests
-from bs4 import BeautifulSoup
-from urllib.parse import urlencode
+import base64
+import urllib.parse
 import json
-# Mock definitions for imports not provided
-class MovieScrapeContext:
-    def __init__(self, media):
-        self.media = media
-
-    def proxied_fetcher(self, endpoint, options):
-        url = f"{options['baseUrl']}{endpoint}"
-        response = requests.post(url, data=options['body'], headers=options['headers'])
-        response.raise_for_status()  # Raise an error for bad status codes
-        return response.text
-
-class NotFoundError(Exception):
-    pass
-
-class Caption:
-    def __init__(self, id, url, type, has_cors_restrictions, language):
-        self.id = id
-        self.url = url
-        self.type = type
-        self.hasCorsRestrictions = has_cors_restrictions
-        self.language = language
-
-def compare_media(media, title, year):
-    return media['title'].lower() == title.lower() and media['year'] == year
-
-def make_cookie_header(cookies):
-    return '; '.join([f'{key}={value}' for key, value in cookies.items()])
-
-def parse_set_cookie(cookie_header):
-    cookies = {}
-    parts = cookie_header.split(';')
-    for part in parts:
-        if '=' in part:
-            key, value = part.strip().split('=', 1)
-            cookies[key] = value
-    return cookies
-
-def login(user, password, ctx):
-    url = f'{base_url}/login'
-    data = {
-        'user': user,
-        'pass': password,
-        'action': 'login'
-    }
-    response = requests.post(url, data=data)
-    response_data = response.json()
-
-    cookie_header = response.headers.get('Set-Cookie', '')
-    if response_data.get('status') != 1:
-        cookie_header = 'PHPSESSID=mk2p73c77qc28o5i5120843ruu;'
-
-    cookies = parse_set_cookie(cookie_header)
-    return cookies.get('PHPSESSID', '')
-
-def parse_search(html_body):
-    print(html_body)
-    results = []
-    soup = BeautifulSoup(html_body, 'html.parser')
-    divs = soup.find_all('div')
-
-    for div in divs:
-        title_element = div.find(class_='title')
-        details_element = div.find(class_='details')
-        control_buttons_element = div.find(class_='control-buttons')
-
-        if title_element and details_element and control_buttons_element:
-            title = title_element.get_text(strip=True)
-            year = details_element.find('span').get_text(strip=True)
-            id = control_buttons_element.get('data-id')
-
-            if title and year and id:
-                try:
-                    year = int(year)
-                    results.append({'title': title, 'year': year, 'id': id})
-                except ValueError:
-                    continue
-
-    return results
-
-# Constants
-base_url = 'https://rips.cc'
-username = '_sf_'
-password = 'defonotscraping'
-
-def combo_scraper(ctx):
-    pass_cookie = login(username, password, ctx)
+import re
+def get_keys():
+    url = "https://raw.githubusercontent.com/Ciarands/vidsrc-keys/main/keys.json"
+    response = requests.get(url)
+    if response.status_code != 200:
+        print("Failed to fetch decryption keys:", response.status_code)
+        return None
     
-    if not pass_cookie:
-        raise Exception('Login failed')
+    keys = response.json()
+    return keys['encrypt'] + keys['decrypt']
 
-    search_response = ctx.proxied_fetcher('/get', {
-        'baseUrl': base_url,
-        'method': 'POST',
-        'body': {'query': ctx.media['title'], 'action': 'search'},
-        'headers': {
-            'cookie': make_cookie_header({'PHPSESSID': pass_cookie}),
-        },
-    })
+keys = get_keys()
 
-    search_results = parse_search(search_response)
-    id = next((item['id'] for item in search_results if compare_media(ctx.media, item['title'], item['year'])), None)
-    if not id:
-        raise NotFoundError('No watchable item found')
-
-    details_response = ctx.proxied_fetcher('/get', {
-        'baseUrl': base_url,
-        'method': 'POST',
-        'body': {'id': id, 'action': 'get_movie_info'},
-        'headers': {
-            'cookie': make_cookie_header({'PHPSESSID': pass_cookie}),
-        },
-    })
+def rc4(key, inp):
+    e = [[]] * 9
+    e[4] = list(range(256))
+    e[3] = 0
+    e[8] = ""
+    i = 0
+    for i in range(256):
+        e[3] = (e[3] + e[4][i] + ord(key[i % len(key)])) % 256
+        e[2] = e[4][i]
+        e[4][i] = e[4][e[3]]
+        e[4][e[3]] = e[2]
     
-    details = json.loads(details_response)
-    if not details['message']['video']:
-        raise Exception('Failed to get the stream')
-    key_response = ctx.proxied_fetcher('/renew', {
-        'baseUrl': base_url,
-        'method': 'POST',
-        'body': {},
-        'headers': {
-            'cookie': make_cookie_header({'PHPSESSID': pass_cookie}),
-        },
-    })
+    i = 0
+    e[3] = 0
+    for j in range(len(inp)):
+        i = (i + 1) % 256
+        e[3] = (e[3] + e[4][i]) % 256
+        e[2] = e[4][i]
+        e[4][i] = e[4][e[3]]
+        e[4][e[3]] = e[2]
+        e[8] += chr(ord(inp[j]) ^ e[4][(e[4][i] + e[4][e[3]]) % 256])
+    
+    return e[8]
 
-    key_params = json.loads(key_response)
-    if not key_params['k']:
-        raise Exception('Failed to get the key')
+def enc(inp):
+    inp = urllib.parse.quote(inp)
+    e = rc4(keys[0], inp)
+    out = base64.b64encode(e.encode()).decode().replace('/', '_').replace('+', '-')
+    return out
 
-    server = 'https://vid.ee3.me/vid/' if details['message']['server'] == '1' else 'https://vault.rips.cc/video/'
-    k = key_params['k']
-    url = f"{server}{details['message']['video']}?{urlencode({'k': k})}"
-    captions = []
+def embed_enc(inp):
+    inp = urllib.parse.quote(inp)
+    e = rc4(keys[1], inp)
+    out = base64.b64encode(e.encode()).decode().replace('/', '_').replace('+', '-')
+    return out
 
-    if details['message']['subs'].lower() == 'yes' and details['message']['imdbID']:
-        captions.append(Caption(
-            id=f"https://rips.cc/subs/{details['message']['imdbID']}.vtt",
-            url=f"https://rips.cc/subs/{details['message']['imdbID']}.vtt",
-            type='vtt',
-            has_cors_restrictions=False,
-            language='en'
-        ))
+def h_enc(inp):
+    inp = urllib.parse.quote(inp)
+    e = rc4(keys[2], inp)
+    out = base64.b64encode(e.encode()).decode().replace('/', '_').replace('+', '-')
+    return out
 
-    return {
-        'embeds': [],
-        'stream': [
-            {
-                'id': 'primary',
-                'type': 'file',
-                'flags': ['CORS_ALLOWED'],
-                'captions': captions,
-                'qualities': {
-                    720: {
-                        'type': 'mp4',
-                        'url': url,
-                    },
-                },
-            },
-        ],
-    }
+def dec(inp):
+    i = base64.b64decode(inp.replace('_', '/').replace('-', '+')).decode()
+    e = rc4(keys[3], i)
+    e = urllib.parse.unquote(e)
+    return e
 
-# Mock implementation of the make_sourcerer function
-def make_sourcerer(config):
-    return config
+def embed_dec(inp):
+    i = base64.b64decode(inp.replace('_', '/').replace('-', '+')).decode()
+    e = rc4(keys[4], i)
+    e = urllib.parse.unquote(e)
+    return e
 
-ee3_scraper = make_sourcerer({
-    'id': 'ee3',
-    'name': 'EE3',
-    'rank': 111,
-    'flags': ['CORS_ALLOWED'],
-    'scrapeMovie': combo_scraper,
-})
+def get_subtitles(vidplay_link):
+    if 'sub.info=' in vidplay_link:
+        subtitle_link = vidplay_link.split('?sub.info=')[1].split('&')[0]
+        subtitle_link = urllib.parse.unquote(subtitle_link)
+        subtitles_fetch = requests.get(subtitle_link).json()
+        subtitles = [{'file': subtitle['file'], 'lang': subtitle['label']} for subtitle in subtitles_fetch]
+        return subtitles
+    return []
+
+def episode(data_id):
+    url = f"https://vidsrc.to/ajax/embed/episode/{data_id}/sources?token={urllib.parse.quote(enc(data_id))}"
+    print(f"url: {url}")
+    resp = requests.get(url).json()
+    f2cloud_id = resp['result'][0]['id']
+    
+    url = f"https://vidsrc.to/ajax/embed/source/{f2cloud_id}?token={urllib.parse.quote(enc(f2cloud_id))}"
+    resp = requests.get(url).json()
+    f2cloud_url = resp['result']['url']
+    f2cloud_url_dec = dec(f2cloud_url)
+
+    subtitles = get_subtitles(f2cloud_url_dec)
+    
+    url = urllib.parse.urlparse(f2cloud_url_dec)
+    embed_id = url.path.split("/")[2]
+    h = h_enc(embed_id)
+    mediainfo_url = f"https://vid2v11.site/mediainfo/{embed_enc(embed_id)}{url.query}&ads=0&h={urllib.parse.quote(h)}"
+    resp = requests.get(mediainfo_url).json()
+    
+    playlist = embed_dec(resp['result'])
+    if isinstance(playlist, str):
+        playlist = json.loads(playlist)
+    
+    source = playlist.get('sources', [{}])[0].get('file')
+
+    data = {'file': source, 'sub': subtitles}
+    return {'data': data}
+
+def get_movie(id):
+    resp = requests.get(f"https://vidsrc.to/embed/movie/{id}").text
+    data_id = re.search(r'data-id="(.*?)"', resp).group(1)
+    print(data_id)
+    return episode(data_id)
+
+def get_series(id, s, e):
+    resp = requests.get(f"https://vidsrc.to/embed/tv/{id}/{s}/{e}").text
+    data_id = re.search(r'data-id="(.*?)"', resp).group(1)
+    return episode(data_id)
+
 # Example usage
 if __name__ == "__main__":
-    media = {'title': 'Madame Web', 'year': 2024}
-    ctx = MovieScrapeContext(media)
-    output = combo_scraper(ctx)
-    print(output)
+    movie_data = get_movie('tt2975590')
+    print(movie_data)
+
+    #series_data = get_series('tt0944947', '1', '1')
+    #print(series_data)
