@@ -1,8 +1,73 @@
 from .utils import fetch
 from typing import Union
+import urllib.parse
 from . import subtitle
 import re
 import base64
+import json
+from urllib.parse import quote, unquote
+from base64 import b64encode, b64decode
+def btoa(value: str) -> str:
+    # btoa source: https://github.com/WebKit/WebKit/blob/fcd2b898ec08eb8b922ff1a60adda7436a9e71de/Source/JavaScriptCore/jsc.cpp#L1419
+    binary = value.encode("latin-1")
+    return b64encode(binary).decode()
+
+
+def atob(value: str) -> str:
+    binary = b64decode(value.encode())
+    return binary.decode("latin-1")
+def rc4(key, inp):
+    e = [[]] * 9
+    e[4] = list(range(256))
+    e[3] = 0
+    e[8] = ""
+    i = 0
+    for i in range(256):
+        e[3] = (e[3] + e[4][i] + ord(key[i % len(key)])) % 256
+        e[2] = e[4][i]
+        e[4][i] = e[4][e[3]]
+        e[4][e[3]] = e[2]
+    
+    i = 0
+    e[3] = 0
+    for j in range(len(inp)):
+        i = (i + 1) % 256
+        e[3] = (e[3] + e[4][i]) % 256
+        e[2] = e[4][i]
+        e[4][i] = e[4][e[3]]
+        e[4][e[3]] = e[2]
+        e[8] += chr(ord(inp[j]) ^ e[4][(e[4][i] + e[4][e[3]]) % 256])
+    
+    return e[8]
+def enc(inp):
+    inp = quote(inp)
+    e = rc4('bZSQ97kGOREZeGik', inp)
+    out = btoa(e)
+    return out
+
+def embed_enc(inp):
+    inp = quote(inp)
+    e = rc4('NeBk5CElH19ucfBU', inp)
+    out = btoa(e)
+    return out
+
+def h_enc(inp):
+    inp = quote(inp)
+    e = rc4('Z7YMUOoLEjfNqPAt', inp)
+    out = base64.b64encode(e.encode("latin-1")).decode().replace('/', '_').replace('+', '-')
+    return out
+
+def dec(inp):
+    i = base64.b64decode(inp.replace('_', '/').replace('-', '+')).decode("latin-1")
+    e = rc4('wnRQe3OZ1vMcD1ML', i)
+    e = unquote(e)
+    return e
+
+def embed_dec(inp):
+    i = base64.b64decode(inp.replace('_', '/').replace('-', '+')).decode("latin-1")
+    e = rc4('eO74cTKZayUWH8x5', i)
+    e = unquote(e)
+    return e
 
 async def decode_data(key: str, data: Union[bytearray, str]) -> bytearray:
     key_bytes = bytes(key, 'utf-8')
@@ -35,7 +100,6 @@ async def handle(url) -> dict:
     URL = url.split("?")
     SRC_URL = URL[0]
     SUB_URL = URL[1]
-
     # GET SUB
     subtitles = {}
     subtitles = await subtitle.vscsubs(SUB_URL)
@@ -46,30 +110,40 @@ async def handle(url) -> dict:
     print(f"decrypt: "+ (decrypt))
     key1,key2      = key_req.json()
 
-    decoded_id     = await decode_data(key1, SRC_URL.split('/e/')[-1])
-    encoded_result = await decode_data(key2, decoded_id)
-    encoded_base64 = base64.b64encode(encoded_result)
-    key            = encoded_base64.decode('utf-8').replace('/', '_')
-
+    #decoded_id     = await decode_data(key1, SRC_URL.split('/e/')[-1])
+    #encoded_result = await decode_data(key2, decoded_id)
+    #encoded_base64 = base64.b64encode(encoded_result)
+    #key            = encoded_base64.decode('utf-8').replace('/', '_')
+    url = urllib.parse.urlparse(url)
+    embed_id = url.path.split("/")[2]
+    h = h_enc(embed_id)
+    print(f"h: {h}")
+    mediainfo_url = f"https://vid2v11.site/mediainfo/{embed_enc(embed_id)}?{url.query}&ads=0&h={quote(h)}"
+    print(f"mediainfo_url: {mediainfo_url}")
     # GET FUTOKEN
-    req = await fetch("https://vid2v11.site/futoken", {"Referer": url,"Host" : "vid2v11.site"})
-    fu_key = re.search(r"var\s+k\s*=\s*'([^']+)'", req.text).group(1)
-    data = f"{fu_key},{','.join([str(ord(fu_key[i % len(fu_key)]) + ord(key[i])) for i in range(len(key))])}"
-    data = f"{fu_key},{','.join([str(ord(fu_key[i % len(fu_key)]) + ord(key[i])) for i in range(len(key))])}"
-    print(f"[>] url https://vid2v11.site/mediainfo/{data}?{SUB_URL}&autostart=true")
+    #req = await fetch("https://vid2v11.site/futoken", {"Referer": url,"Host" : "vid2v11.site"})
+    #fu_key = re.search(r"var\s+k\s*=\s*'([^']+)'", req.text).group(1)
+    #data = f"{fu_key},{','.join([str(ord(fu_key[i % len(fu_key)]) + ord(key[i])) for i in range(len(key))])}"
+    #data = f"{fu_key},{','.join([str(ord(fu_key[i % len(fu_key)]) + ord(key[i])) for i in range(len(key))])}"
+    #print(f"[>] url https://vid2v11.site/mediainfo/{data}?{SUB_URL}&autostart=true")
     # GET SRC
-    req = await fetch(f"https://vid2v11.site/mediainfo/{data}?{SUB_URL}&autostart=true",headers={"Referer": url})
+    req = await fetch(mediainfo_url)
     req_data = req.json()
-    print(f"[>] req_data \"{req_data}\"...")
+    playlist = embed_dec(req_data.get("result"))
+    print(f"[>] result \"{playlist}\"...")
+    if isinstance(playlist, str):
+        playlist = json.loads(playlist)
     # RETURN IT
-    if type(req_data.get("result")) == dict:
+    if type(playlist) == dict:
+        print("dict")
         return {
-            'stream':req_data.get("result").get("sources", [{}])[0].get("file"),
+            'stream':playlist.get("sources", [{}])[0].get("file"),
             'subtitle':subtitles
         }
     else:
+        print(playlist.get("sources", [{}])[0].get("file"))
         return {
-            'stream':req_data.get("result").get("sources", [{}])[0].get("file"),
+            'stream':playlist.get("sources", [{}])[0].get("file"),
             'subtitle':subtitles
         }
 async def handle_futoken(imdb_id) -> dict:

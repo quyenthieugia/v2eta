@@ -5,3 +5,4 @@ pymemcache
 pycryptodome
 cryptography
 aiohttp
+btoa

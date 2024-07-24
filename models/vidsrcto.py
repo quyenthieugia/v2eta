@@ -6,8 +6,20 @@ from .utils import fetch,error,decode_url
 import base64
 import re
 from urllib.parse import quote, unquote
+from base64 import b64encode, b64decode
+#from btoa import btoa, atob
 VIDSRC_KEY:str = "WXrUARXb1aDLaZjI"
 SOURCES:list = ['F2Cloud','Filemoon']
+
+def btoa(value: str) -> str:
+    # btoa source: https://github.com/WebKit/WebKit/blob/fcd2b898ec08eb8b922ff1a60adda7436a9e71de/Source/JavaScriptCore/jsc.cpp#L1419
+    binary = value.encode("latin-1")
+    return b64encode(binary).decode()
+
+
+def atob(value: str) -> str:
+    binary = b64decode(value.encode())
+    return binary.decode("latin-1")
 
 def rc4(key, inp):
     e = [[]] * 9
@@ -72,45 +84,31 @@ def encode_to_url_safe_base64(s):
     return url_safe_encoded
 
 def enc(inp):
-    print(f"[>] inp \"{inp}\"...")
     inp = quote(inp)
-    print(f"encodeURIComponent {inp}")
-    e = rc44('bZSQ97kGOREZeGik', inp)
-    print(f"rc4:{e}")
-
-    byte_string = e.encode()  # Đảm bảo sử dụng encoding UTF-8
-    encoded = base64.b64encode(byte_string).decode()
-    result = encoded.replace("/", "_").replace("+", "-")
-    print(f"result {result}")
-
-    out = base64.b64encode(e.encode()).decode().replace("/", "_").replace("+", '-')
-    #out2 = base64.b64encode(e).decode().replace("/", "_").replace("+", '-')
-    #test = encode_to_url_safe_base64(e)
-    #print(f"[>] test \"{test}\"...")
-    print(f"[>] out \"{out}\"...")
-    #print(f"[>] out2 \"{out2}\"...")
+    e = rc4('bZSQ97kGOREZeGik', inp)
+    out = btoa(e)
     return out
 
 def embed_enc(inp):
     inp = quote(inp)
     e = rc4('NeBk5CElH19ucfBU', inp)
-    out = base64.b64encode(e.encode()).decode().replace("/", "_").replace("+", '-')
+    out = btoa(e)
     return out
 
 def h_enc(inp):
     inp = quote(inp)
     e = rc4('Z7YMUOoLEjfNqPAt', inp)
-    out = base64.b64encode(e.encode()).decode().replace("/", "_").replace("+", '-')
+    out = btoa(e)
     return out
 
 def dec(inp):
-    i = base64.b64decode(inp.replace("_", "/").replace("-", "+")).decode()
+    i = base64.b64decode(inp.replace('_', '/').replace('-', '+')).decode("latin-1")
     e = rc4('wnRQe3OZ1vMcD1ML', i)
     e = unquote(e)
     return e
 
 def embed_dec(inp):
-    i = base64.b64decode(inp.replace("_", "/").replace("-", "+")).decode()
+    i = atob(inp)
     e = rc4('eO74cTKZayUWH8x5', i)
     e = unquote(e)
     return e
@@ -129,19 +127,23 @@ async def get_source(source_id:str,SOURCE_NAME:str) -> str:
         "sec-gpc": "1",
         "upgrade-insecure-requests": "1"
     }
-    api_request:str = await fetch(f"https://vidsrc.to/ajax/embed/source/{source_id}",headers)
+    token = quote(enc(source_id))
+    api_request:str = await fetch(f"https://vidsrc.to/ajax/embed/source/{source_id}?token={token}",headers)
     if api_request.status_code == 200:
         try:
             data:dict = api_request.json()
             encrypted_source_url = data.get("result", {}).get("url")
-
-            return {"decoded":await decode_url(encrypted_source_url,VIDSRC_KEY),"title":SOURCE_NAME}
+            decrypted_source_url = dec(encrypted_source_url)
+            print(f"decrypted_source_url: {decrypted_source_url}")
+            return {"decoded":decrypted_source_url,"title":SOURCE_NAME}
         except:
             return {}
     else:
         return {}
         
 async def get_stream(source_url:str,SOURCE_NAME:str):
+    print(f"source_url: {source_url}")
+   
     RESULT = {}
     RESULT['name'] = SOURCE_NAME
     if SOURCE_NAME==SOURCES[0]:
