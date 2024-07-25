@@ -249,16 +249,10 @@ async def get(dbid:str,s:int=None,e:int=None):
     }
    
     id_request = await fetch(id_url,headers)
-    req = requests.get(id_url)
-    print(f"text: {req}")
-    print(f"request: {id_request}")
-   
     if id_request.status_code == 200:
         try:
-            print(f"text: {id_request.text}")
             soup = BeautifulSoup(id_request.text, "html.parser")
             sources_code = soup.find('a', {'data-id': True}).get("data-id",None)
-            print(f"sources_code: {sources_code}")
             if sources_code == None:
                 return await error("media unavailable.")
             else:
