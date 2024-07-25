@@ -96,7 +96,6 @@ def get_value(key: str):
         return {"key": key, "value": value.decode('utf-8')}
     else:
         raise Exception('Key not found')
-@staticmethod
 def get_key(enc: bool, num: int) -> str:
     try:
         key_cache = "KEY-CACHE-VIDSRC"
@@ -150,6 +149,7 @@ def encode_to_url_safe_base64(s):
 
 def enc(v_id: str) -> str:
     key = get_encryption_key()
+    print(f"key:" + key)
     v_id = quote(v_id)
     e = rc4(key, v_id)
     out = btoa(e)
@@ -258,6 +258,7 @@ async def get(dbid:str,s:int=None,e:int=None):
             print(f"text: {id_request.text}")
             soup = BeautifulSoup(id_request.text, "html.parser")
             sources_code = soup.find('a', {'data-id': True}).get("data-id",None)
+            print(f"sources_code: {sources_code}")
             if sources_code == None:
                 return await error("media unavailable.")
             else:
@@ -280,7 +281,8 @@ async def get(dbid:str,s:int=None,e:int=None):
                     *[get_stream(R.get('decoded'),R.get('title')) for R in SOURCE_URLS]
                 )
                 return SOURCE_STREAMS
-        except:
-            return await error("backend id not working.")
+        except Exception as e:
+            logging.error(f"Error fetching keys: {e}")
+            return await error(f"backend id not working:{e}")
     else:
         return await error(f"backend not working.[{id_request.status_code}]")

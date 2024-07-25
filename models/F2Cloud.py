@@ -28,7 +28,6 @@ def get_value(key: str):
         return {"key": key, "value": value.decode('utf-8')}
     else:
         raise Exception('Key not found')
-@staticmethod
 def get_key(enc: bool, num: int) -> str:
     try:
         key_cache = "KEY-CACHE-VIDSRC"
