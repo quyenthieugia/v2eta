@@ -16,6 +16,28 @@ def get_keys():
 keys = get_keys()
 
 def rc4(key, inp):
+    e = [0] * 256
+    j = 0
+    out = []
+
+    # Key-scheduling algorithm (KSA)
+    for i in range(256):
+        e[i] = i
+    for i in range(256):
+        j = (j + e[i] + ord(key[i % len(key)])) % 256
+        e[i], e[j] = e[j], e[i]
+
+    # Pseudo-random generation algorithm (PRGA)
+    i = j = 0
+    for char in inp:
+        i = (i + 1) % 256
+        j = (j + e[i]) % 256
+        e[i], e[j] = e[j], e[i]
+        out.append(chr(ord(char) ^ e[(e[i] + e[j]) % 256]))
+
+    return ''.join(out)
+
+def rc4(key, inp):
     e = [[]] * 9
     e[4] = list(range(256))
     e[3] = 0
