@@ -6,3 +6,5 @@ pycryptodome
 cryptography
 aiohttp
 btoa
+python-binary-memcached
+requests

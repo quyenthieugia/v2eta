@@ -7,11 +7,67 @@ import base64
 import json
 from urllib.parse import quote, unquote
 from base64 import b64encode, b64decode
+import requests
+from .utils import CouldntFetchKeys
+from pymemcache.client import base
+import bmemcached
+from pydantic import BaseModel
+import logging
+#memcache_client = base.Client(('localhost', 11211))
+memcache_client = bmemcached.Client(('127.0.0.1:11211'),username='admin',password='Daodinh215186')
+class Item(BaseModel):
+    key: str
+    value: str
+def set_value(item: Item):
+    memcache_client.set(item.key, item.value)
+    return {"message": "Value set successfully"}
+
+def get_value(key: str):
+    value = memcache_client.get(key)
+    if value:
+        return {"key": key, "value": value.decode('utf-8')}
+    else:
+        raise Exception('Key not found')
+@staticmethod
+def get_key(enc: bool, num: int) -> str:
+    try:
+        key_cache = "KEY-CACHE-VIDSRC"
+        cache_value = memcache_client.get(key_cache)
+        if cache_value:
+            #keys = cache_value.decode('utf-8')
+            data_dict = json.loads(cache_value)
+            return data_dict["encrypt" if enc else "decrypt"][num]
+        else:
+            req = requests.get('https://raw.githubusercontent.com/Ciarands/vidsrc-keys/main/keys.json')
+            if req.status_code != 200:
+                raise CouldntFetchKeys("Failed to fetch decryption keys!")
+            keys = req.json()
+            json_data = json.dumps(keys)
+            memcache_client.set(key_cache, json_data,60)
+            return keys["encrypt" if enc else "decrypt"][num]
+    except Exception as e:
+        logging.error(f"Error fetching keys: {e}")
+        return ""
+
+def get_decryption_key() -> str:
+    return get_key(False, 0)
+
+def get_embed_decryption_key() -> str:
+    return get_key(False, 1)
+
+def get_encryption_key() -> str:
+    return get_key(True, 0)
+
+def get_embed_encryption_key() -> str:
+    key_embed = get_key(True, 1)
+    return get_key(True, 1)
+
+def get_h_encryption_key() -> str:
+    return get_key(True, 2)
+
 def btoa(value: str) -> str:
-    # btoa source: https://github.com/WebKit/WebKit/blob/fcd2b898ec08eb8b922ff1a60adda7436a9e71de/Source/JavaScriptCore/jsc.cpp#L1419
     binary = value.encode("latin-1")
     return b64encode(binary).decode()
-
 
 def atob(value: str) -> str:
     binary = b64decode(value.encode())
@@ -39,33 +95,39 @@ def rc4(key, inp):
         e[8] += chr(ord(inp[j]) ^ e[4][(e[4][i] + e[4][e[3]]) % 256])
     
     return e[8]
-def enc(inp):
-    inp = quote(inp)
-    e = rc4('bZSQ97kGOREZeGik', inp)
+def enc(v_id: str) -> str:
+    key = get_encryption_key()
+    v_id = quote(v_id)
+    e = rc4(key, v_id)
     out = btoa(e)
     return out
 
 def embed_enc(inp):
+    key = get_embed_encryption_key()
     inp = quote(inp)
-    e = rc4('NeBk5CElH19ucfBU', inp)
+    e = rc4(key, inp)
     out = btoa(e)
     return out
 
 def h_enc(inp):
     inp = quote(inp)
-    e = rc4('Z7YMUOoLEjfNqPAt', inp)
+    key = get_h_encryption_key()
+    print(f"h_enc: {key}")
+    e = rc4(key, inp)
     out = base64.b64encode(e.encode("latin-1")).decode().replace('/', '_').replace('+', '-')
     return out
 
 def dec(inp):
+    key = get_decryption_key()
     i = base64.b64decode(inp.replace('_', '/').replace('-', '+')).decode("latin-1")
-    e = rc4('wnRQe3OZ1vMcD1ML', i)
+    e = rc4(key, i)
     e = unquote(e)
     return e
 
 def embed_dec(inp):
+    key = get_embed_decryption_key()
     i = base64.b64decode(inp.replace('_', '/').replace('-', '+')).decode("latin-1")
-    e = rc4('eO74cTKZayUWH8x5', i)
+    e = rc4(key, i)
     e = unquote(e)
     return e
 
@@ -104,11 +166,11 @@ async def handle(url) -> dict:
     subtitles = {}
     subtitles = await subtitle.vscsubs(SUB_URL)
     # DECODE SRC
-    key_req        = await fetch('https://raw.githubusercontent.com/Ciarands/vidsrc-keys/main/keys.json')
-    encrypt,decrypt      = key_req.json()
-    print(f"encrypt:" + (encrypt))
-    print(f"decrypt: "+ (decrypt))
-    key1,key2      = key_req.json()
+    #key_req        = await fetch('https://raw.githubusercontent.com/Ciarands/vidsrc-keys/main/keys.json')
+    #encrypt,decrypt      = key_req.json()
+    #print(f"encrypt:" + (encrypt))
+    #print(f"decrypt: "+ (decrypt))
+    #key1,key2      = key_req.json()
 
     #decoded_id     = await decode_data(key1, SRC_URL.split('/e/')[-1])
     #encoded_result = await decode_data(key2, decoded_id)
@@ -120,12 +182,6 @@ async def handle(url) -> dict:
     print(f"h: {h}")
     mediainfo_url = f"https://vid2v11.site/mediainfo/{embed_enc(embed_id)}?{url.query}&ads=0&h={quote(h)}"
     print(f"mediainfo_url: {mediainfo_url}")
-    # GET FUTOKEN
-    #req = await fetch("https://vid2v11.site/futoken", {"Referer": url,"Host" : "vid2v11.site"})
-    #fu_key = re.search(r"var\s+k\s*=\s*'([^']+)'", req.text).group(1)
-    #data = f"{fu_key},{','.join([str(ord(fu_key[i % len(fu_key)]) + ord(key[i])) for i in range(len(key))])}"
-    #data = f"{fu_key},{','.join([str(ord(fu_key[i % len(fu_key)]) + ord(key[i])) for i in range(len(key))])}"
-    #print(f"[>] url https://vid2v11.site/mediainfo/{data}?{SUB_URL}&autostart=true")
     # GET SRC
     req = await fetch(mediainfo_url)
     req_data = req.json()

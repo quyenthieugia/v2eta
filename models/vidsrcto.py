@@ -6,13 +6,27 @@ from .utils import fetch,error,decode_url
 import base64
 import re
 from urllib.parse import quote, unquote
+import requests
 from base64 import b64encode, b64decode
-#from btoa import btoa, atob
+from .utils import CouldntFetchKeys
+from pymemcache.client import base
+from pydantic import BaseModel
+import logging
+import bmemcached
 VIDSRC_KEY:str = "WXrUARXb1aDLaZjI"
 SOURCES:list = ['F2Cloud','Filemoon']
 
+memcache_server = '127.0.0.1'
+memcache_port = 11211
+memcache_username = 'admin'
+memcache_password = 'Daodinh215186'
+#memcache_client = base.Client((memcache_server, memcache_port),username = memcache_username,password = memcache_password)
+#memcache_client = bmemcached.Client(('157.245.131.248', 11211), username='admin', password='Daodinh215186')
+memcache_client = bmemcached.Client(('127.0.0.1:11211'),username='admin',password='Daodinh215186')
+#memcache_client = base.Client(('localhost', 11211))
+#memcache_client.
+
 def btoa(value: str) -> str:
-    # btoa source: https://github.com/WebKit/WebKit/blob/fcd2b898ec08eb8b922ff1a60adda7436a9e71de/Source/JavaScriptCore/jsc.cpp#L1419
     binary = value.encode("latin-1")
     return b64encode(binary).decode()
 
@@ -69,6 +83,57 @@ def rc44(key, inp):
     
     return ''.join(output)
 
+class Item(BaseModel):
+    key: str
+    value: str
+def set_value(item: Item):
+    memcache_client.set(item.key, item.value)
+    return {"message": "Value set successfully"}
+
+def get_value(key: str):
+    value = memcache_client.get(key)
+    if value:
+        return {"key": key, "value": value.decode('utf-8')}
+    else:
+        raise Exception('Key not found')
+@staticmethod
+def get_key(enc: bool, num: int) -> str:
+    try:
+        key_cache = "KEY-CACHE-VIDSRC"
+        cache_value = memcache_client.get(key_cache)
+        if cache_value:
+            #keys = cache_value.decode('utf-8')
+            data_dict = json.loads(cache_value)
+            print(f"cache value: {data_dict}")
+            return data_dict["encrypt" if enc else "decrypt"][num]
+        else:
+            req = requests.get('https://raw.githubusercontent.com/Ciarands/vidsrc-keys/main/keys.json')
+            if req.status_code != 200:
+                raise CouldntFetchKeys("Failed to fetch decryption keys!")
+            keys = req.json()
+            json_data = json.dumps(keys)
+            memcache_client.set(key_cache, json_data,60)
+            return keys["encrypt" if enc else "decrypt"][num]
+    except Exception as e:
+        logging.error(f"Error fetching keys: {e}")
+        return ""
+
+def get_decryption_key() -> str:
+    return get_key(False, 0)
+
+def get_embed_decryption_key() -> str:
+    return get_key(False, 1)
+
+def get_encryption_key() -> str:
+    return get_key(True, 0)
+
+def get_embed_encryption_key() -> str:
+    key_embed = get_key(True, 1)
+    return get_key(True, 1)
+
+def get_h_encryption_key() -> str:
+    return get_key(True, 2)
+
 
 def encode_to_url_safe_base64(s):
     # Chuyển đổi chuỗi thành bytes
@@ -83,33 +148,39 @@ def encode_to_url_safe_base64(s):
     
     return url_safe_encoded
 
-def enc(inp):
-    inp = quote(inp)
-    e = rc4('bZSQ97kGOREZeGik', inp)
+def enc(v_id: str) -> str:
+    key = get_encryption_key()
+    v_id = quote(v_id)
+    e = rc4(key, v_id)
     out = btoa(e)
     return out
 
 def embed_enc(inp):
+    key = get_embed_encryption_key()
     inp = quote(inp)
-    e = rc4('NeBk5CElH19ucfBU', inp)
+    e = rc4(key, inp)
     out = btoa(e)
     return out
 
 def h_enc(inp):
     inp = quote(inp)
-    e = rc4('Z7YMUOoLEjfNqPAt', inp)
-    out = btoa(e)
+    key = get_h_encryption_key()
+    print(f"h_enc: {key}")
+    e = rc4(key, inp)
+    out = base64.b64encode(e.encode("latin-1")).decode().replace('/', '_').replace('+', '-')
     return out
 
 def dec(inp):
+    key = get_decryption_key()
     i = base64.b64decode(inp.replace('_', '/').replace('-', '+')).decode("latin-1")
-    e = rc4('wnRQe3OZ1vMcD1ML', i)
+    e = rc4(key, i)
     e = unquote(e)
     return e
 
 def embed_dec(inp):
-    i = atob(inp)
-    e = rc4('eO74cTKZayUWH8x5', i)
+    key = get_embed_decryption_key()
+    i = base64.b64decode(inp.replace('_', '/').replace('-', '+')).decode("latin-1")
+    e = rc4(key, i)
     e = unquote(e)
     return e
 
@@ -176,12 +247,7 @@ async def get(dbid:str,s:int=None,e:int=None):
         "sec-gpc": "1",
         "upgrade-insecure-requests": "1"
     }
-    #key_req = await fetch('https://raw.githubusercontent.com/Ciarands/vidsrc-keys/main/keys.json')
-    #data  = key_req.json()
-    #encrypt = data.get("encrypt", [])
-    #key1,key2,key3 = encrypt
-    #print(key1)
-    
+   
     id_request = await fetch(id_url,headers)
     print(f"id_request: {id_request}")
     if id_request.status_code == 200:
