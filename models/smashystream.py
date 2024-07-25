@@ -74,7 +74,7 @@ async def get_server(dbid: str, s: int = None, e: int = None) -> dict:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0",
             "Sec-Fetch-Site": "cross-site"
         })
-        reqR = requests.get('https://raw.githubusercontent.com/Ciarands/vidsrc-keys/main/keys.json')
+        reqR = requests.get(id_url)
         print(f"req status: {req.status_code}")
         print(f"req text: {reqR.text}")
         req_data = req.json()  # Ensure to await the JSON parsing
