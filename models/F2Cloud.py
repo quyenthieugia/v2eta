@@ -13,7 +13,6 @@ from pymemcache.client import base
 import bmemcached
 from pydantic import BaseModel
 import logging
-#memcache_client = base.Client(('localhost', 11211))
 memcache_client = bmemcached.Client(('127.0.0.1:11211'),username='admin',password='Daodinh215186')
 class Item(BaseModel):
     key: str
