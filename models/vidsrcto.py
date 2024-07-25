@@ -250,6 +250,7 @@ async def get(dbid:str,s:int=None,e:int=None):
    
     id_request = await fetch(id_url,headers)
     print(f"id_request: {id_request}")
+    print(f"text: {id_request.text}")
     if id_request.status_code == 200:
         try:
             print(f"text: {id_request.text}")
