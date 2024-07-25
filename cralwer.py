@@ -3,6 +3,17 @@ import base64
 import urllib.parse
 import json
 import re
+from base64 import b64encode, b64decode
+from urllib.parse import quote, unquote
+def btoa(value: str) -> str:
+    # btoa source: https://github.com/WebKit/WebKit/blob/fcd2b898ec08eb8b922ff1a60adda7436a9e71de/Source/JavaScriptCore/jsc.cpp#L1419
+    binary = value.encode("latin-1")
+    return b64encode(binary).decode()
+
+
+def atob(value: str) -> str:
+    binary = b64decode(value.encode())
+    return binary.decode("latin-1")
 def get_keys():
     url = "https://raw.githubusercontent.com/Ciarands/vidsrc-keys/main/keys.json"
     response = requests.get(url)
@@ -62,46 +73,46 @@ def rc4(key, inp):
     return e[8]
 
 def enc(inp):
-    inp = urllib.parse.quote(inp)
+    inp = quote(inp)
     e = rc4(keys[0], inp)
-    out = base64.b64encode(e.encode()).decode().replace('/', '_').replace('+', '-')
+    out = btoa(e)
     return out
 
 def embed_enc(inp):
-    inp = urllib.parse.quote(inp)
+    inp = quote(inp)
     e = rc4(keys[1], inp)
-    out = base64.b64encode(e.encode()).decode().replace('/', '_').replace('+', '-')
+    out = btoa(e)
     return out
 
 def h_enc(inp):
-    inp = urllib.parse.quote(inp)
+    inp = quote(inp)
     e = rc4(keys[2], inp)
-    out = base64.b64encode(e.encode()).decode().replace('/', '_').replace('+', '-')
+    out = btoa(e)
     return out
 
 def dec(inp):
-    i = base64.b64decode(inp.replace('_', '/').replace('-', '+')).decode()
+    i = atob(inp)
     e = rc4(keys[3], i)
-    e = urllib.parse.unquote(e)
+    e = unquote(e)
     return e
 
 def embed_dec(inp):
-    i = base64.b64decode(inp.replace('_', '/').replace('-', '+')).decode()
+    i = atob(inp)
     e = rc4(keys[4], i)
-    e = urllib.parse.unquote(e)
+    e = unquote(e)
     return e
 
 def get_subtitles(vidplay_link):
     if 'sub.info=' in vidplay_link:
         subtitle_link = vidplay_link.split('?sub.info=')[1].split('&')[0]
-        subtitle_link = urllib.parse.unquote(subtitle_link)
+        subtitle_link = unquote(subtitle_link)
         subtitles_fetch = requests.get(subtitle_link).json()
         subtitles = [{'file': subtitle['file'], 'lang': subtitle['label']} for subtitle in subtitles_fetch]
         return subtitles
     return []
 
 def episode(data_id):
-    url = f"https://vidsrc.to/ajax/embed/episode/{data_id}/sources?token={urllib.parse.quote(enc(data_id))}"
+    url = f"https://vidsrc.to/ajax/embed/episode/{data_id}/sources?token={quote(enc(data_id))}"
     print(f"url: {url}")
     resp = requests.get(url).json()
     f2cloud_id = resp['result'][0]['id']
@@ -141,6 +152,8 @@ def get_series(id, s, e):
 
 # Example usage
 if __name__ == "__main__":
+    #e = "?♀#ôyr»C:`"
+    #out = base64.b64decode(e.encode()).decode().replace("/", "_").replace("+", '-')
     movie_data = get_movie('tt2975590')
     print(movie_data)
 
