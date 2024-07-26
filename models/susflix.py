@@ -59,6 +59,7 @@ async def get_streaming(dbid: str, s: int = None, e: int = None) -> dict :
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
         })
         req_data = req.text
+        print(f"req_data : {req_data}")
         pattern = r"'Qualities':\s*\[(.*?)\]"
         match = re.search(pattern, req_data, re.DOTALL)
         if match:

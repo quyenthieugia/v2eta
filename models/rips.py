@@ -170,19 +170,10 @@ def combo_scraper(ctx):
         ))
 
     return {
-        'embeds': [],
         'stream': [
             {
-                'id': 'primary',
-                'type': 'file',
-                'flags': ['CORS_ALLOWED'],
-                'captions': captions,
-                'qualities': {
-                    720: {
-                        'type': 'mp4',
-                        'url': url,
-                    },
-                },
+                'type': 'mp4',
+                'url': url
             },
         ],
     }
@@ -209,6 +200,7 @@ async def get_imdb_info(imdb: str) -> str:
 async def get_streaming(dbid: str, s: int = None, e: int = None) -> dict :
     try:
         movie_info = await get_imdb_info(dbid)
+        print(movie_info)
         id = 0
         title = ""
         release_year = 0
