@@ -22,7 +22,7 @@ async def index():
     return await info()
 
 @app.get('/vidsrc/{dbid}')
-async def watchseriesx(dbid:str,s:int=None,e:int=None):
+async def vidsrc(dbid:str,s:int=None,e:int=None):
     if dbid:
         return {
             "status":200,
@@ -33,7 +33,7 @@ async def watchseriesx(dbid:str,s:int=None,e:int=None):
         raise HTTPException(status_code=404, detail=f"Invalid id: {dbid}")
     
 @app.get('/watchseriesx/{dbid}')
-async def vidsrc(dbid:str,s:int=None,e:int=None):
+async def watchseriesx(dbid:str,s:int=None,e:int=None):
     if dbid:
         return {
             "status":200,
