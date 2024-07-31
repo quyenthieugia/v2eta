@@ -9,8 +9,10 @@ import asyncio
 import threading
 import urllib.parse
 import random
+import bmemcached
 from concurrent.futures import ThreadPoolExecutor
-
+#memcache_client = base.Client(('localhost', 11211))
+memcache_client = bmemcached.Client(('127.0.0.1:11211'),username='admin',password='Daodinh215186')
 async def get_imdb_info(imdb: str) -> str:
     api_url = "https://api.themoviedb.org/3/find/" + imdb + "?api_key=0f020a66f3e35379eef31c31363f2176&external_source=imdb_id"
     req = await fetch(api_url, {
@@ -36,9 +38,11 @@ async def get_streaming(dbid: str, s: int = None, e: int = None) -> dict :
         # Get a random element from the list
         random_element = random.choice(json_array)
         # Access the 'cookie' value from the selected random element
-        random_cookie = random_element['cookie']
+        #random_cookie = random_element['cookie']
+        random_cookie = "session=eyJfZnJlc2giOmZhbHNlLCJwaG9uZV9udW1iZXIiOiJoYXN0YWcifQ.Zqm-xQ.tA6raijOmocPgyiQ3p6lCYI59cs"
         movie_info = await get_imdb_info(dbid)
         id = 0
+        stream = []
         if movie_info['movie_results'] :
             id = movie_info['movie_results'][0]['id']
             #title = movie_info['movie_results'][0]['title']
@@ -65,18 +69,20 @@ async def get_streaming(dbid: str, s: int = None, e: int = None) -> dict :
         if match:
             # Extract the Qualities array
             qualities_array = match.group(1)
-
             # Define the pattern to extract individual qualities
             quality_pattern = r"\{'path':\s*'(.*?)',\s*'quality':\s*'(.*?)'\}"
-
             # Find all matches
             qualities = re.findall(quality_pattern, qualities_array)
+            #print(f"qualities : {qualities}")
             # Print the extracted qualities
             for path, quality in qualities:
-                print(f"Path: {path}, Quality: {quality}")
+                link_stream = ''.join(path).replace("\\\\", "")
+                new_stream = {"path": link_stream, "quality": ''.join(quality)}
+                stream.append(new_stream)
+                #print(f"Path: {path}, Quality: {quality}")
         else:
             print("No match found")
-        return {'result': qualities}
+        return {'result': stream}
      
     except Exception as e:
         logging.error(f"Error fetching server data: {e}")
