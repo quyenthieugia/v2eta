@@ -14,7 +14,7 @@ from pydantic import BaseModel
 import logging
 import bmemcached
 VIDSRC_KEY:str = "WXrUARXb1aDLaZjI"
-SOURCES:list = ['F2Cloud','Filemoon']
+SOURCES:list = ['Server 1','Filemoon']
 
 memcache_server = '127.0.0.1'
 memcache_port = 11211
