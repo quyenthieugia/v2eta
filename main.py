@@ -6,7 +6,7 @@ This is an ASGI made using fastapi as a proof of concept and for educational use
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware # CORS
 import gzip
-from models import vidsrctoget,vidsrcmeget,vidsrctogetfutoken,info,fetch,fetchserver,fetchsource,fetchstreaming,fetchripstreaming
+from models import vidsrctoget,vidsrcmeget,vidsrctogetfutoken,info,fetch,fetchserver,fetchsource,fetchstreaming,fetchripstreaming,fetchwatchseriesx
 from io import BytesIO
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -22,6 +22,17 @@ async def index():
     return await info()
 
 @app.get('/vidsrc/{dbid}')
+async def watchseriesx(dbid:str,s:int=None,e:int=None):
+    if dbid:
+        return {
+            "status":200,
+            "info":"success",
+            "sources":await fetchwatchseriesx(dbid,s,e)
+        }
+    else:
+        raise HTTPException(status_code=404, detail=f"Invalid id: {dbid}")
+    
+@app.get('/watchseriesx/{dbid}')
 async def vidsrc(dbid:str,s:int=None,e:int=None):
     if dbid:
         return {
