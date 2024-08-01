@@ -38,8 +38,8 @@ async def get_streaming(dbid: str, s: int = None, e: int = None) -> dict :
         # Get a random element from the list
         random_element = random.choice(json_array)
         # Access the 'cookie' value from the selected random element
-        #random_cookie = random_element['cookie']
-        random_cookie = "session=eyJfZnJlc2giOmZhbHNlLCJwaG9uZV9udW1iZXIiOiJoYXN0YWcifQ.Zqm-xQ.tA6raijOmocPgyiQ3p6lCYI59cs"
+        random_cookie = random_element['cookie']
+        #random_cookie = "session=eyJfZnJlc2giOmZhbHNlLCJwaG9uZV9udW1iZXIiOiJoYXN0YWcifQ.Zqm-xQ.tA6raijOmocPgyiQ3p6lCYI59cs"
         movie_info = await get_imdb_info(dbid)
         id = 0
         stream = []
