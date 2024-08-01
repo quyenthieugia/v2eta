@@ -112,8 +112,9 @@ async def get_imdb_info(imdb: str) -> str:
 async def search(query):
     url = f"https://{HOST}/filter?keyword={query}"
     resp = requests.get(url)
+    print(resp)
     resp_text = resp.text
-    
+    print(resp_text)
     items = []
     regex = re.compile(r'<div class="item">([\s\S]*?)<\/div>\s*<\/div>')
     for match in regex.finditer(resp_text):
@@ -159,6 +160,7 @@ async def get_streaming(dbid: str, s: int = None, e: int = None) -> dict :
             release_date = movie_info['tv_results'][0]['first_air_date']
             release_year = release_date.split('-')[0]
         search_movie = await search(title)
+        print(search_movie)
         if media == "tv":
             id = next((item['id'] for item in search_movie if compare_tv(item, title,"tv")), None)
             movie_info = await tv(id,s,e)
