@@ -78,7 +78,8 @@ async def get_streaming(dbid: str, s: int = None, e: int = None) -> dict :
             for path, quality in qualities:
                 link_stream = ''.join(path).replace("\\\\", "")
                 new_stream = {"path": link_stream, "quality": ''.join(quality)}
-                stream.append(new_stream)
+                if link_stream!= "":
+                    stream.append(new_stream)
                 #print(f"Path: {path}, Quality: {quality}")
         else:
             print("No match found")
