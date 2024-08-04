@@ -111,7 +111,6 @@ def embed_enc(inp):
 def h_enc(inp):
     inp = quote(inp)
     key = get_h_encryption_key()
-    print(f"h_enc: {key}")
     e = rc4(key, inp)
     out = base64.b64encode(e.encode("latin-1")).decode().replace('/', '_').replace('+', '-')
     return out
@@ -164,17 +163,6 @@ async def handle(url) -> dict:
     # GET SUB
     subtitles = {}
     subtitles = await subtitle.vscsubs(SUB_URL)
-    # DECODE SRC
-    #key_req        = await fetch('https://raw.githubusercontent.com/Ciarands/vidsrc-keys/main/keys.json')
-    #encrypt,decrypt      = key_req.json()
-    #print(f"encrypt:" + (encrypt))
-    #print(f"decrypt: "+ (decrypt))
-    #key1,key2      = key_req.json()
-
-    #decoded_id     = await decode_data(key1, SRC_URL.split('/e/')[-1])
-    #encoded_result = await decode_data(key2, decoded_id)
-    #encoded_base64 = base64.b64encode(encoded_result)
-    #key            = encoded_base64.decode('utf-8').replace('/', '_')
     url = urllib.parse.urlparse(url)
     embed_id = url.path.split("/")[2]
     h = h_enc(embed_id)
